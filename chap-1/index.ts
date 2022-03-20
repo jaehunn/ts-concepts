@@ -1,12 +1,10 @@
-const log = console.log;
-
 // 타입스크립트와 자바스크립트의 관계성
 
 // 1. 모든 자바스크립트는 모든 타입스크립트다. 하지만, 모든 타입스크립트는 모든 자바스크립트가 될 수 없다.
 {
   // 자바스크립트는 매개변수에 타입을 지정할 수 없다.
   function sayHi(name: string) {
-    log(`Hi, ${name}!`);
+    console.log(`Hi, ${name}!`);
   }
 
   sayHi("Jaehun");
