@@ -104,3 +104,146 @@
   // boolean, literal = 유한 집합
   // number, string = 무한 집합
 }
+
+// 3. 타입공간과 값공간의 심벌 구분하기
+{
+}
+
+// ...
+
+// 11. 잉여 속성 체크의 한계 인지하기
+{
+  interface Room {
+    numDoors: number;
+    ceilingHeightFt: number;
+  }
+
+  const r1: Room = {
+    numDoors: 1,
+    ceilingHeightFt: 10,
+    elephant: "present", // 할당할 수 없다. (잉여 속성 체크)
+  };
+
+  const _r2 = {
+    numDoors: 1,
+    ceilingHeightFt: 10,
+    elephant: "present",
+  };
+
+  const r2: Room = _r2; // _r2 는 Room 타입의 부분 집합을 포함하므로 타입체크를 통과한다. (할당 기능 검사)
+
+  interface Options {
+    title: string;
+    darkMode?: boolean;
+  }
+
+  // opt 는 객체 리터럴이다. (타입을 걸면 잉여속성체크로 오류를 잡아낼 수 있다.)
+  const opt = {
+    title: "",
+  };
+
+  // opt2 는 객체리터럴이 아니다. (타입을 걸어도 title 을 포함하고, darkMode 라는 속성을 가졌을때 불리언이기만하면 모두 허용된다.)
+  // darkMode 가 불리언이 아닌 경우를 제외하고, title: string 을 가지는 모든 객체는 Options 타입에 속한다.
+  const opt2: Options = opt;
+
+  const o1: Options = document;
+  const o2: Options = new HTMLAnchorElement();
+
+  // 따라서 잉여 속성 체크를 이용해야한다. (엄격한 객체 리터럴 체크)
+
+  // 단언도 오류를 잡아내지 못한다.
+  const o = { dark_mode: true, title: "ski" } as Options;
+
+  // 단언보다 선언을 사용하고, 객체 리터럴에 타입을 걸도록 하자.
+
+  // 인덱스 시그니처로 추가적인 속성을 예상하도록 설정할 수 있다.
+  interface OptionsV2 {
+    darkMode?: boolean;
+    [otherOptions: string]: boolean | undefined; // 인덱스 시그니처
+  }
+
+  const optV2: OptionsV2 = {
+    dark_mode: true,
+  };
+
+  // 옵셔널 속성만 가지는 타입은 약한 타입이다. (모든 객체가 허용됨)
+  interface LineChartOptions {
+    logscale?: boolean;
+    invertedYAxis?: boolean;
+    areaChart?: boolean;
+  }
+
+  const opts = {
+    log_scale: true,
+  };
+
+  // 모든 속성이 옵셔널이라 모든 객체를 포함할 수 있지만,
+  // 약한 타입에 대해서 타입스크립트는 값 타입과 선언 타입에 공통된 속성이 있는지 확인하는 로직을 수행한다. (공통 속성 체크)
+  const opts2: LineChartOptions = opts;
+
+  // 잉여 속성 체크는 객체 리터럴에서만 적용된다.
+  // 공통 속성 체크는 약한 타입(모든 속성이 옵셔널)의 할당문마다 동작한다.
+}
+
+// 12. 함수 표현식에 타입 적용하기
+{
+  // function statement(문)
+  function a() {}
+
+  // function expression(식)
+  const b = function () {};
+
+  // expression 이 좋다. 함수 타입을 재사용할 수 있기 때문
+  type BinaryFn = (a: number, b: number) => number;
+  const add: BinaryFn = (a, b) => a + b;
+  const sub: BinaryFn = (a, b) => a - b;
+  const mul: BinaryFn = (a, b) => a * b;
+  const div: BinaryFn = (a, b) => a / b;
+
+  // 대부분의 라이브러리는 공통 함수 시그니처를 타입으로 제공한다. (MouseEventHandler)
+
+  const responseP = fetch("/"); // 반환 타입: Promise<Response>
+
+  async function getQuote() {
+    const res = await fetch("/quote");
+    const quote = await res.json();
+
+    return quote;
+  }
+
+  // '/quote' 가 없는 API 라면, 404 를 뱉을 수 있고, 응답이 json 이 아닐 수 있다.
+  // response.json() 은 json 이 아니라는 내용으로 오류메시지를 담고 rejected Promise 를 반환한다.
+  // 그렇게 되면, 실제 근본적인 오류인 404 는 감추어진다. (응답이 json이 아니라는 내용으로)
+
+  // fetch 타입 선언은 다음과 같다.
+  declare function fetch(
+    input: RequestInfo,
+    init?: RequestInit
+  ): Promise<Response>;
+
+  async function checkedFetch(input: RequestInfo, init?: RequestInit) {
+    const response = await fetch(input, init);
+
+    if (!response.ok) {
+      throw new Error(`Request failed: ` + response.status);
+    }
+
+    return response;
+  }
+
+  // 더 간결하게
+  const checkedFetchV2: typeof fetch = async (input, init) => {
+    const response = await fetch(input, init);
+
+    if (!response.ok) {
+      throw new Error(`Request failed: ` + response.status);
+      // return 'error' 오류가 발생한다.
+    }
+
+    return response;
+  };
+
+  // typeof fetch 는 타입스크립트가 함수의 타입을 추론할 수 있게 한다. (매개변수 타입 추론, 반환타입 추론)
+
+  // 함수 표현식 전체 타입을 정의하는 것이 좋다.
+}
